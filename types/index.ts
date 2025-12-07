@@ -4,11 +4,13 @@ export interface CatFact {
 }
 
 export interface Breed {
+  id?: number;
   breed: string;
   country: string;
   origin: string;
   coat: string;
   pattern: string;
+  image_url?: string;
 }
 
 export interface BreedResponse {

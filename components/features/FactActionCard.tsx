@@ -10,17 +10,15 @@ interface FactActionCardProps {
 }
 
 export function FactActionCard({ fact }: FactActionCardProps) {
-    const [mode, setMode] = useState<'original' | 'joke' | 'summary' | 'emoji' | 'dramatic'>('original');
+    const [mode, setMode] = useState<'original' | 'joke' | 'summary' | 'dramatic'>('original');
     const [copied, setCopied] = useState(false);
 
     const getDisplayContent = () => {
         switch (mode) {
             case 'joke':
-                return `Why did the cat? Because ${fact.fact.toLowerCase()} 😂`;
+                return `Why did the cat? Because ${fact.fact.toLowerCase()}`;
             case 'summary':
                 return `TL;DR: ${fact.fact.substring(0, 50)}...`;
-            case 'emoji':
-                return fact.fact.split(' ').map(w => Math.random() > 0.7 ? w + ' 🐱' : w).join(' ');
             case 'dramatic':
                 return `In a world where... ${fact.fact.toUpperCase()}!!!`;
             default:
@@ -74,14 +72,6 @@ export function FactActionCard({ fact }: FactActionCardProps) {
                     >
                         <FileText className="mr-2 h-3 w-3" />
                         Summary
-                    </Button>
-                    <Button
-                        variant={mode === 'emoji' ? 'secondary' : 'outline'}
-                        size="sm"
-                        onClick={() => setMode('emoji')}
-                    >
-                        <MessageCircle className="mr-2 h-3 w-3" />
-                        Emoji
                     </Button>
                     <Button
                         variant={mode === 'dramatic' ? 'destructive' : 'outline'}
