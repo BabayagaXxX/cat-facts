@@ -19,18 +19,8 @@ export default function Home() {
           transition={{ duration: 0.8 }}
           className="container relative z-10 px-4"
         >
-          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-primary text-primary-foreground shadow-2xl shadow-primary/30 rotate-3">
-            <Cat className="h-10 w-10" />
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-            className="mx-auto mb-6 w-fit rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary backdrop-blur-sm"
-          >
-            <span className="mr-2">🏆</span> Award Winning Design
-          </motion.div>
+         
+      
 
           <h1 className="mx-auto mb-6 max-w-4xl text-5xl font-black tracking-tight text-foreground sm:text-7xl md:text-8xl">
             The Ultimate <br />
@@ -46,12 +36,6 @@ export default function Home() {
               <Link href="/breeds">
                 Explore Breeds
                 <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="lg" className="h-14 rounded-full px-8 text-lg transition-transform hover:scale-105">
-              <Link href="/hybrid">
-                Create Hybrid
-                <Dna className="ml-2 h-5 w-5" />
               </Link>
             </Button>
           </div>
