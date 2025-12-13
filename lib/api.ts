@@ -2,56 +2,69 @@ import { BreedResponse, CatFact, Breed, Adoption } from "@/types";
 
 const BASE_URL = "https://catfact.ninja";
 
+// ============================================
+// EXTERNAL CAT FACTS API FUNCTIONS
+// ============================================
+
+/**
+ * Fetches cat breeds from external API with pagination
+ */
 export async function getBreeds(page: number = 1): Promise<BreedResponse> {
     const res = await fetch(`${BASE_URL}/breeds?page=${page}`);
-    if (!res.ok) {
-        throw new Error("Failed to fetch breeds");
-    }
+    if (!res.ok) throw new Error("Failed to fetch breeds");
     return res.json();
 }
 
+/**
+ * Fetches a single random cat fact from external API
+ */
 export async function getFact(): Promise<CatFact> {
     const res = await fetch(`${BASE_URL}/fact`);
-    if (!res.ok) {
-        throw new Error("Failed to fetch fact");
-    }
+    if (!res.ok) throw new Error("Failed to fetch fact");
     return res.json();
 }
 
+/**
+ * Fetches multiple cat facts from external API
+ * Uses random page to get different facts each time
+ */
 export async function getFacts(limit: number = 20): Promise<CatFact[]> {
-    // Add random page to get different facts each time (API has 34 pages)
-    const randomPage = Math.floor(Math.random() * 34) + 1;
+    const randomPage = Math.floor(Math.random() * 34) + 1; // API has 34 pages
     const maxLimit = Math.min(limit, 25); // API max is 25 per page
     
-    console.log(`📡 Calling API: ${BASE_URL}/facts?limit=${maxLimit}&page=${randomPage}`);
     const res = await fetch(`${BASE_URL}/facts?limit=${maxLimit}&page=${randomPage}&_=${Date.now()}`, {
-        cache: 'no-store',
+        cache: 'no-store', // Always fetch fresh data
         next: { revalidate: 0 }
     });
-    console.log('📡 API Response status:', res.status);
+    
     if (!res.ok) {
         throw new Error(`Failed to fetch facts: ${res.status} ${res.statusText}`);
     }
+    
     const data = await res.json();
-    console.log('📡 API Response data:', data);
-    console.log(`📄 Fetched from page ${randomPage}`);
-    return data.data; // The API returns { data: [...] } for /facts endpoint
+    return data.data; // API returns { data: [...] }
 }
 
+// ============================================
+// LOCAL DATABASE API FUNCTIONS - BREEDS
+// ============================================
+
+/**
+ * Fetches all breeds from our local database
+ */
 export async function getLocalBreeds(): Promise<Breed[]> {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
     const res = await fetch(`${apiUrl}/api/breeds`, { 
         cache: 'no-store',
         next: { revalidate: 0 }
     });
-    if (!res.ok) {
-        throw new Error("Failed to fetch local breeds");
-    }
-    const data = await res.json();
-    console.log('📥 Fetched local breeds:', data.length);
-    return data;
+    if (!res.ok) throw new Error("Failed to fetch local breeds");
+    return res.json();
 }
 
+/**
+ * Adds a new breed to our local database
+ */
 export async function addBreed(formData: FormData): Promise<Breed> {
     const res = await fetch('/api/breeds', {
         method: 'POST',
@@ -64,53 +77,69 @@ export async function addBreed(formData: FormData): Promise<Breed> {
     return res.json();
 }
 
-// Local facts from database
+// ============================================
+// LOCAL DATABASE API FUNCTIONS - FACTS
+// ============================================
+
+/**
+ * Fetches all saved facts from our local database
+ */
 export async function getLocalFacts(): Promise<CatFact[]> {
     const res = await fetch('/api/facts', { 
         cache: 'no-store',
         next: { revalidate: 0 }
     });
-    if (!res.ok) {
-        throw new Error("Failed to fetch local facts");
-    }
+    if (!res.ok) throw new Error("Failed to fetch local facts");
     return res.json();
 }
 
+/**
+ * Saves a single fact to our local database
+ */
 export async function saveFact(fact: CatFact): Promise<CatFact> {
     const res = await fetch('/api/facts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(fact),
     });
-    if (!res.ok) {
-        throw new Error("Failed to save fact");
-    }
+    if (!res.ok) throw new Error("Failed to save fact");
     return res.json();
 }
 
+/**
+ * Saves multiple facts to our local database at once
+ */
 export async function saveMultipleFacts(facts: CatFact[]): Promise<void> {
     await Promise.all(facts.map(fact => saveFact(fact)));
 }
 
+/**
+ * Clears all facts from our local database
+ */
 export async function clearLocalFacts(): Promise<void> {
     const res = await fetch('/api/facts', { method: 'DELETE' });
-    if (!res.ok) {
-        throw new Error("Failed to clear facts");
-    }
+    if (!res.ok) throw new Error("Failed to clear facts");
 }
 
-// Adoptions API
+// ============================================
+// LOCAL DATABASE API FUNCTIONS - ADOPTIONS
+// ============================================
+
+/**
+ * Fetches all adoption listings from our local database
+ */
 export async function getAdoptions(): Promise<Adoption[]> {
     const res = await fetch('/api/adoptions', { 
         cache: 'no-store',
         next: { revalidate: 0 }
     });
-    if (!res.ok) {
-        throw new Error("Failed to fetch adoptions");
-    }
+    if (!res.ok) throw new Error("Failed to fetch adoptions");
     return res.json();
 }
 
+/**
+ * Creates a new adoption listing in our local database
+ */
 export async function addAdoption(formData: FormData): Promise<Adoption> {
     const res = await fetch('/api/adoptions', {
         method: 'POST',

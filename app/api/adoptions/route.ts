@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { RowDataPacket } from 'mysql2';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
+import { saveUploadedFile } from '@/lib/file-upload';
 
-// GET - Fetch all adoptions
+/**
+ * GET /api/adoptions
+ * Fetches all adoption listings with breed information, sorted by newest first
+ */
 export async function GET() {
     try {
-        console.log('📖 GET /api/adoptions - Fetching all adoptions...');
         const [rows] = await db.query<RowDataPacket[]>(`
             SELECT 
                 a.*,
@@ -16,19 +17,20 @@ export async function GET() {
             LEFT JOIN breeds b ON a.breed_id = b.id
             ORDER BY a.created_at DESC
         `);
-        console.log(`✅ Found ${rows.length} adoptions in database`);
         return NextResponse.json(rows);
     } catch (error) {
-        console.error('❌ Database error:', error);
+        console.error('Failed to fetch adoptions:', error);
         return NextResponse.json({ error: 'Failed to fetch adoptions' }, { status: 500 });
     }
 }
 
-// POST - Create new adoption listing
+/**
+ * POST /api/adoptions
+ * Creates a new adoption listing with optional image upload
+ */
 export async function POST(request: Request) {
     try {
-        console.log('📝 POST /api/adoptions - Creating new adoption...');
-        
+        // Extract all form data
         const formData = await request.formData();
         const name = formData.get('name') as string;
         const breed_id = formData.get('breed_id') as string;
@@ -43,27 +45,13 @@ export async function POST(request: Request) {
         const location = formData.get('location') as string;
         const image = formData.get('image') as File | null;
 
-        console.log('📋 Form data:', { name, breed_id, age, gender, adoption_status });
-
+        // Handle image upload if provided
         let image_url = '';
-
         if (image) {
-            console.log('🖼️ Processing image:', image.name, image.size, 'bytes');
-            const bytes = await image.arrayBuffer();
-            const buffer = Buffer.from(bytes);
-
-            const uploadDir = join(process.cwd(), 'public', 'uploads', 'adoptions');
-            await mkdir(uploadDir, { recursive: true });
-
-            const filename = `${Date.now()}-${image.name.replace(/\s/g, '_')}`;
-            const filepath = join(uploadDir, filename);
-
-            await writeFile(filepath, buffer);
-            image_url = `/uploads/adoptions/${filename}`;
-            console.log('✅ Image saved:', image_url);
+            image_url = await saveUploadedFile(image, 'adoptions');
         }
 
-        console.log('💾 Attempting database insert...');
+        // Insert into database
         const [result] = await db.execute(
             `INSERT INTO adoptions 
             (name, breed_id, age, gender, temperament, description, adoption_status, 
@@ -74,8 +62,6 @@ export async function POST(request: Request) {
         );
 
         const insertId = (result as any).insertId;
-        console.log('✅ Database insert successful! ID:', insertId);
-
         return NextResponse.json({ 
             id: insertId, 
             name, 
@@ -92,7 +78,7 @@ export async function POST(request: Request) {
             image_url 
         }, { status: 201 });
     } catch (error) {
-        console.error('❌ Database error:', error);
+        console.error('Failed to create adoption:', error);
         return NextResponse.json({ 
             error: 'Failed to create adoption listing', 
             details: error instanceof Error ? error.message : 'Unknown error' 
@@ -124,52 +110,34 @@ export async function PUT(request: Request) {
             return NextResponse.json({ error: 'ID is required' }, { status: 400 });
         }
 
-        console.log('📋 Update data:', { id, name, breed_id, age, gender, adoption_status });
-
+        // Handle new image if provided
         let image_url: string | undefined;
-
         if (image) {
-            console.log('🖼️ Processing new image:', image.name);
-            const bytes = await image.arrayBuffer();
-            const buffer = Buffer.from(bytes);
-
-            const uploadDir = join(process.cwd(), 'public', 'uploads', 'adoptions');
-            await mkdir(uploadDir, { recursive: true });
-
-            const filename = `${Date.now()}-${image.name.replace(/\s/g, '_')}`;
-            const filepath = join(uploadDir, filename);
-
-            await writeFile(filepath, buffer);
-            image_url = `/uploads/adoptions/${filename}`;
-            console.log('✅ New image saved:', image_url);
+            image_url = await saveUploadedFile(image, 'adoptions');
         }
 
-        console.log('💾 Attempting database update...');
-        
-        let query: string;
-        let params: any[];
-        
-        if (image_url) {
-            query = `UPDATE adoptions SET 
+        // Build update query based on whether we have a new image
+        const query = image_url
+            ? `UPDATE adoptions SET 
                 name = ?, breed_id = ?, age = ?, gender = ?, temperament = ?, 
                 description = ?, adoption_status = ?, contact_name = ?, contact_email = ?, 
                 contact_phone = ?, location = ?, image_url = ? 
-                WHERE id = ?`;
-            params = [name, breed_id || null, age, gender, temperament, description, adoption_status,
-                     contact_name, contact_email, contact_phone, location, image_url, id];
-        } else {
-            query = `UPDATE adoptions SET 
+                WHERE id = ?`
+            : `UPDATE adoptions SET 
                 name = ?, breed_id = ?, age = ?, gender = ?, temperament = ?, 
                 description = ?, adoption_status = ?, contact_name = ?, contact_email = ?, 
                 contact_phone = ?, location = ? 
                 WHERE id = ?`;
-            params = [name, breed_id || null, age, gender, temperament, description, adoption_status,
-                     contact_name, contact_email, contact_phone, location, id];
-        }
+        
+        const params = image_url
+            ? [name, breed_id || null, age, gender, temperament, description, adoption_status,
+               contact_name, contact_email, contact_phone, location, image_url, id]
+            : [name, breed_id || null, age, gender, temperament, description, adoption_status,
+               contact_name, contact_email, contact_phone, location, id];
 
         await db.execute(query, params);
-        console.log('✅ Database update successful!');
 
+        // Return updated adoption with breed name
         const [rows] = await db.query<RowDataPacket[]>(`
             SELECT a.*, b.breed as breed_name
             FROM adoptions a
@@ -179,7 +147,7 @@ export async function PUT(request: Request) {
         
         return NextResponse.json(rows[0], { status: 200 });
     } catch (error) {
-        console.error('❌ Update error:', error);
+        console.error('Failed to update adoption:', error);
         return NextResponse.json({ 
             error: 'Failed to update adoption listing', 
             details: error instanceof Error ? error.message : 'Unknown error' 
@@ -187,7 +155,10 @@ export async function PUT(request: Request) {
     }
 }
 
-// DELETE - Delete adoption listing
+/**
+ * DELETE /api/adoptions?id=123
+ * Deletes an adoption listing from the database
+ */
 export async function DELETE(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
@@ -197,14 +168,10 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: 'ID is required' }, { status: 400 });
         }
 
-        console.log('🗑️ DELETE /api/adoptions - Deleting adoption ID:', id);
-
         await db.execute('DELETE FROM adoptions WHERE id = ?', [id]);
-        console.log('✅ Adoption deleted successfully!');
-
-        return NextResponse.json({ success: true, message: 'Adoption deleted successfully' }, { status: 200 });
+        return NextResponse.json({ success: true, message: 'Adoption deleted successfully' });
     } catch (error) {
-        console.error('❌ Delete error:', error);
+        console.error('Failed to delete adoption:', error);
         return NextResponse.json({ 
             error: 'Failed to delete adoption listing', 
             details: error instanceof Error ? error.message : 'Unknown error' 

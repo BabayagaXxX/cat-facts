@@ -8,47 +8,59 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 
+/**
+ * Component that displays a filterable list of cat adoptions
+ * Users can filter by status and search by keywords
+ */
 export default function AdoptionList() {
   const [adoptions, setAdoptions] = useState<Adoption[]>([]);
   const [filtered, setFiltered] = useState<Adoption[]>([]);
   const [status, setStatus] = useState<string>("all");
-  const [q, setQ] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
+  // Load adoptions when component mounts
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    
+    const loadAdoptions = async () => {
       setLoading(true);
       try {
         const data = await getAdoptions();
         if (!cancelled) {
           setAdoptions(data);
         }
-      } catch (e) {
-        console.error(e);
+      } catch (error) {
+        console.error('Failed to load adoptions:', error);
       } finally {
         if (!cancelled) setLoading(false);
       }
-    })();
-    return () => {
-      cancelled = true;
     };
+    
+    loadAdoptions();
+    return () => { cancelled = true; };
   }, []);
 
+  // Filter adoptions whenever status, search query, or adoptions change
   useEffect(() => {
-    const s = status.toLowerCase();
-    const query = q.trim().toLowerCase();
-    const f = adoptions.filter((a) => {
-      const byStatus = s === "all" || (a.adoption_status || "").toLowerCase() === s;
-      const text = `${a.name || ""} ${a.breed || ""} ${a.location || ""} ${a.description || ""}`.toLowerCase();
-      const byQuery = !query || text.includes(query);
-      return byStatus && byQuery;
+    const filtered = adoptions.filter((adoption) => {
+      // Filter by status
+      const matchesStatus = status === "all" || 
+                          (adoption.adoption_status || "").toLowerCase() === status.toLowerCase();
+      
+      // Filter by search query (searches name, breed, location, description)
+      const searchText = `${adoption.name} ${adoption.breed} ${adoption.location} ${adoption.description}`.toLowerCase();
+      const matchesSearch = !searchQuery || searchText.includes(searchQuery.toLowerCase());
+      
+      return matchesStatus && matchesSearch;
     });
-    setFiltered(f);
-  }, [status, q, adoptions]);
+    
+    setFiltered(filtered);
+  }, [status, searchQuery, adoptions]);
 
   return (
     <div className="space-y-4">
+      {/* Filter Controls */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div>
           <Label htmlFor="status">Status</Label>
@@ -65,8 +77,13 @@ export default function AdoptionList() {
           </select>
         </div>
         <div className="md:col-span-2">
-          <Label htmlFor="q">Search</Label>
-          <Input id="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name, breed, location" />
+          <Label htmlFor="searchQuery">Search</Label>
+          <Input 
+            id="searchQuery" 
+            value={searchQuery} 
+            onChange={(e) => setSearchQuery(e.target.value)} 
+            placeholder="Search by name, breed, location" 
+          />
         </div>
       </div>
 

@@ -11,46 +11,39 @@ interface FactsPlaygroundProps {
     initialFacts: CatFact[];
 }
 
+/**
+ * Component for displaying and refreshing cat facts
+ * Allows users to fetch new facts from the API and save them to the database
+ */
 export function FactsPlayground({ initialFacts }: FactsPlaygroundProps) {
     const [facts, setFacts] = useState<CatFact[]>(initialFacts);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
     const [updateKey, setUpdateKey] = useState(0);
-    const [mounted, setMounted] = useState(false);
 
-    // Handle client-side mounting
-    useState(() => {
-        setMounted(true);
-    });
-
+    /**
+ * Fetches new facts from the external API and replaces current facts
+     * Steps: 1) Get new facts, 2) Clear old facts from DB, 3) Save new facts to DB, 4) Update UI
+     */
     const handleLoadMore = async () => {
         setLoading(true);
         setError(null);
-        console.log('🔄 Fetching new facts from API...');
-        console.log('📊 Current facts (before):', facts.slice(0, 2).map(f => f.fact.substring(0, 40)));
         
         try {
-            // Fetch new facts from external API
+            // Step 1: Fetch fresh facts from the external cat facts API
             const newFacts = await getFacts(10);
-            console.log('✅ Received NEW facts from API:', newFacts.length);
-            console.log('📊 New facts preview:', newFacts.slice(0, 2).map(f => f.fact.substring(0, 40)));
             
-            // Clear old facts and save new ones to database
-            console.log('💾 Saving facts to database...');
+            // Step 2: Clear old facts and save new ones to our database
             await clearLocalFacts();
             await saveMultipleFacts(newFacts);
-            console.log('✅ Facts saved to database!');
             
-            // Force complete state update
-            const timestamp = Date.now();
-            setUpdateKey(timestamp); // Use timestamp for unique key
-            setFacts(newFacts.map((f, i) => ({ ...f, _key: `${timestamp}-${i}` }))); // Add unique key to each fact
+            // Step 3: Update the UI with new facts
+            setFacts(newFacts);
             setLastUpdate(new Date());
-            
-            console.log('📊 State updated! Facts should now display:', newFacts.slice(0, 2).map(f => f.fact.substring(0, 40)));
+            setUpdateKey(Date.now()); // Force re-render of the grid
         } catch (error) {
-            console.error("❌ Failed to fetch facts", error);
+            console.error("Failed to fetch facts:", error);
             setError(error instanceof Error ? error.message : "Failed to fetch facts");
         } finally {
             setLoading(false);

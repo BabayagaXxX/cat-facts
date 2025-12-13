@@ -1,25 +1,31 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { RowDataPacket } from 'mysql2';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
+import { saveUploadedFile } from '@/lib/file-upload';
 
+/**
+ * GET /api/breeds
+ * Fetches all breeds from the database, sorted by newest first
+ */
 export async function GET() {
     try {
-        console.log('📖 GET /api/breeds - Fetching all breeds...');
-        const [rows] = await db.query<RowDataPacket[]>('SELECT * FROM breeds ORDER BY created_at DESC');
-        console.log(`✅ Found ${rows.length} breeds in database`);
+        const [rows] = await db.query<RowDataPacket[]>(
+            'SELECT * FROM breeds ORDER BY created_at DESC'
+        );
         return NextResponse.json(rows);
     } catch (error) {
-        console.error('❌ Database error:', error);
+        console.error('Failed to fetch breeds:', error);
         return NextResponse.json({ error: 'Failed to fetch breeds' }, { status: 500 });
     }
 }
 
+/**
+ * POST /api/breeds
+ * Creates a new breed in the database with optional image upload
+ */
 export async function POST(request: Request) {
     try {
-        console.log('📝 POST /api/breeds - Starting...');
-        
+        // Extract form data
         const formData = await request.formData();
         const breed = formData.get('breed') as string;
         const country = formData.get('country') as string;
@@ -28,41 +34,25 @@ export async function POST(request: Request) {
         const pattern = formData.get('pattern') as string;
         const image = formData.get('image') as File | null;
 
-        console.log('📋 Form data:', { breed, country, origin, coat, pattern, hasImage: !!image });
-
+        // Handle image upload if provided
         let image_url = '';
-
         if (image) {
-            console.log('🖼️ Processing image:', image.name, image.size, 'bytes');
-            const bytes = await image.arrayBuffer();
-            const buffer = Buffer.from(bytes);
-
-            // Ensure uploads directory exists
-            const uploadDir = join(process.cwd(), 'public', 'uploads');
-            await mkdir(uploadDir, { recursive: true });
-
-            // Create unique filename
-            const filename = `${Date.now()}-${image.name.replace(/\s/g, '_')}`;
-            const filepath = join(uploadDir, filename);
-
-            await writeFile(filepath, buffer);
-            image_url = `/uploads/${filename}`;
-            console.log('✅ Image saved:', image_url);
+            image_url = await saveUploadedFile(image, 'breeds');
         }
 
-        console.log('💾 Attempting database insert...');
+        // Insert breed into database
         const [result] = await db.execute(
             'INSERT INTO breeds (breed, country, origin, coat, pattern, image_url) VALUES (?, ?, ?, ?, ?, ?)',
             [breed, country, origin, coat, pattern, image_url]
         );
 
         const insertId = (result as any).insertId;
-        console.log('✅ Database insert successful! ID:', insertId);
-
-        return NextResponse.json({ id: insertId, breed, country, origin, coat, pattern, image_url }, { status: 201 });
+        return NextResponse.json(
+            { id: insertId, breed, country, origin, coat, pattern, image_url },
+            { status: 201 }
+        );
     } catch (error) {
-        console.error('❌ Database error:', error);
-        console.error('Error details:', error instanceof Error ? error.message : error);
+        console.error('Failed to add breed:', error);
         return NextResponse.json({ 
             error: 'Failed to add breed', 
             details: error instanceof Error ? error.message : 'Unknown error' 
@@ -70,10 +60,13 @@ export async function POST(request: Request) {
     }
 }
 
+/**
+ * PUT /api/breeds
+ * Updates an existing breed with optional new image
+ */
 export async function PUT(request: Request) {
     try {
-        console.log('✏️ PUT /api/breeds - Starting update...');
-        
+        // Extract form data
         const formData = await request.formData();
         const id = formData.get('id') as string;
         const breed = formData.get('breed') as string;
@@ -87,48 +80,28 @@ export async function PUT(request: Request) {
             return NextResponse.json({ error: 'ID is required' }, { status: 400 });
         }
 
-        console.log('📋 Update data:', { id, breed, country, origin, coat, pattern, hasNewImage: !!image });
-
+        // Handle new image if provided
         let image_url: string | undefined;
-
         if (image) {
-            console.log('🖼️ Processing new image:', image.name, image.size, 'bytes');
-            const bytes = await image.arrayBuffer();
-            const buffer = Buffer.from(bytes);
-
-            const uploadDir = join(process.cwd(), 'public', 'uploads');
-            await mkdir(uploadDir, { recursive: true });
-
-            const filename = `${Date.now()}-${image.name.replace(/\s/g, '_')}`;
-            const filepath = join(uploadDir, filename);
-
-            await writeFile(filepath, buffer);
-            image_url = `/uploads/${filename}`;
-            console.log('✅ New image saved:', image_url);
+            image_url = await saveUploadedFile(image, 'breeds');
         }
 
-        console.log('💾 Attempting database update...');
+        // Build update query based on whether we have a new image
+        const query = image_url
+            ? 'UPDATE breeds SET breed = ?, country = ?, origin = ?, coat = ?, pattern = ?, image_url = ? WHERE id = ?'
+            : 'UPDATE breeds SET breed = ?, country = ?, origin = ?, coat = ?, pattern = ? WHERE id = ?';
         
-        let query: string;
-        let params: any[];
-        
-        if (image_url) {
-            query = 'UPDATE breeds SET breed = ?, country = ?, origin = ?, coat = ?, pattern = ?, image_url = ? WHERE id = ?';
-            params = [breed, country, origin, coat, pattern, image_url, id];
-        } else {
-            query = 'UPDATE breeds SET breed = ?, country = ?, origin = ?, coat = ?, pattern = ? WHERE id = ?';
-            params = [breed, country, origin, coat, pattern, id];
-        }
+        const params = image_url
+            ? [breed, country, origin, coat, pattern, image_url, id]
+            : [breed, country, origin, coat, pattern, id];
 
         await db.execute(query, params);
-        console.log('✅ Database update successful!');
 
-        // Fetch the updated record
+        // Return updated breed
         const [rows] = await db.query<RowDataPacket[]>('SELECT * FROM breeds WHERE id = ?', [id]);
-        
         return NextResponse.json(rows[0], { status: 200 });
     } catch (error) {
-        console.error('❌ Update error:', error);
+        console.error('Failed to update breed:', error);
         return NextResponse.json({ 
             error: 'Failed to update breed', 
             details: error instanceof Error ? error.message : 'Unknown error' 
@@ -136,6 +109,10 @@ export async function PUT(request: Request) {
     }
 }
 
+/**
+ * DELETE /api/breeds?id=123
+ * Deletes a breed from the database
+ */
 export async function DELETE(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
@@ -145,14 +122,10 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: 'ID is required' }, { status: 400 });
         }
 
-        console.log('🗑️ DELETE /api/breeds - Deleting breed ID:', id);
-
         await db.execute('DELETE FROM breeds WHERE id = ?', [id]);
-        console.log('✅ Breed deleted successfully!');
-
-        return NextResponse.json({ success: true, message: 'Breed deleted successfully' }, { status: 200 });
+        return NextResponse.json({ success: true, message: 'Breed deleted successfully' });
     } catch (error) {
-        console.error('❌ Delete error:', error);
+        console.error('Failed to delete breed:', error);
         return NextResponse.json({ 
             error: 'Failed to delete breed', 
             details: error instanceof Error ? error.message : 'Unknown error' 
