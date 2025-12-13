@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CatFact } from "@/types";
 import { getFacts, saveMultipleFacts, clearLocalFacts } from "@/lib/api";
 import { FactActionCard } from "@/components/features/FactActionCard";
@@ -23,7 +23,14 @@ export function FactsPlayground({ initialFacts }: FactsPlaygroundProps) {
     const [updateKey, setUpdateKey] = useState(0);
 
     /**
- * Fetches new facts from the external API and replaces current facts
+     * Auto-load fresh facts when component mounts (page navigation)
+     */
+    useEffect(() => {
+        handleLoadMore();
+    }, []);
+
+    /**
+     * Fetches new facts from the external API and replaces current facts
      * Steps: 1) Get new facts, 2) Clear old facts from DB, 3) Save new facts to DB, 4) Update UI
      */
     const handleLoadMore = async () => {

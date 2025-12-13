@@ -4,7 +4,7 @@ import { FactsPlayground } from "@/components/features/FactsPlayground";
 export default async function PlaygroundPage() {
     let facts = [];
     try {
-        facts = await getFacts(20);
+        facts = await getFacts(10);
     } catch (error) {
         console.error("Failed to fetch initial facts", error);
         // Fallback facts if API fails
