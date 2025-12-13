@@ -13,6 +13,25 @@ export interface Breed {
   image_url?: string;
 }
 
+export interface Adoption {
+  id?: number;
+  name: string;
+  breed_id?: number;
+  breed?: string; // For displaying breed name
+  age: number;
+  gender: 'Male' | 'Female' | 'Unknown';
+  temperament?: string;
+  description?: string;
+  adoption_status: 'available' | 'pending' | 'adopted';
+  contact_name: string;
+  contact_email: string;
+  contact_phone?: string;
+  location?: string;
+  image_url?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface BreedResponse {
   current_page: number;
   data: Breed[];

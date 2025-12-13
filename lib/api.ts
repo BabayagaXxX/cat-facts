@@ -1,4 +1,4 @@
-import { BreedResponse, CatFact, Breed } from "@/types";
+import { BreedResponse, CatFact, Breed, Adoption } from "@/types";
 
 const BASE_URL = "https://catfact.ninja";
 
@@ -97,4 +97,28 @@ export async function clearLocalFacts(): Promise<void> {
     if (!res.ok) {
         throw new Error("Failed to clear facts");
     }
+}
+
+// Adoptions API
+export async function getAdoptions(): Promise<Adoption[]> {
+    const res = await fetch('/api/adoptions', { 
+        cache: 'no-store',
+        next: { revalidate: 0 }
+    });
+    if (!res.ok) {
+        throw new Error("Failed to fetch adoptions");
+    }
+    return res.json();
+}
+
+export async function addAdoption(formData: FormData): Promise<Adoption> {
+    const res = await fetch('/api/adoptions', {
+        method: 'POST',
+        body: formData,
+    });
+    if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.details || errorData.error || "Failed to add adoption");
+    }
+    return res.json();
 }

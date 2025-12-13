@@ -3,13 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Cat, Dna, BookOpen, Home } from "lucide-react";
+import { Cat, BookOpen, Home } from "lucide-react";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 
 const navItems = [
     { href: "/", label: "Home", icon: Home },
     { href: "/breeds", label: "Breeds", icon: Cat },
-    { href: "/hybrid", label: "Hybrid", icon: Dna },
     { href: "/playground", label: "Facts", icon: BookOpen },
 ];
 
@@ -25,7 +24,7 @@ export function Navbar() {
                 </Link>
                 <div className="flex items-center gap-2 sm:gap-4">
                     <div className="flex items-center gap-1 sm:gap-2">
-                        {navItems.map((item) => {
+                        {navItems.concat([{ href: "/adoptions", label: "Adoptions", icon: Cat }]).map((item) => {
                             const Icon = item.icon;
                             const isActive = pathname === item.href;
                             return (
