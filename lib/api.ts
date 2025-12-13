@@ -151,3 +151,32 @@ export async function addAdoption(formData: FormData): Promise<Adoption> {
     }
     return res.json();
 }
+
+/**
+ * Updates the adoption status of a cat
+ */
+export async function updateAdoptionStatus(id: number, status: 'available' | 'adopted'): Promise<Adoption> {
+    const res = await fetch(`/api/adoptions/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+    });
+    if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.details || errorData.error || "Failed to update adoption status");
+    }
+    return res.json();
+}
+
+/**
+ * Soft deletes an adopted cat (sets deleted_at timestamp)
+ */
+export async function softDeleteAdoption(id: number): Promise<void> {
+    const res = await fetch(`/api/adoptions/${id}`, {
+        method: 'DELETE',
+    });
+    if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.details || errorData.error || "Failed to delete adoption");
+    }
+}

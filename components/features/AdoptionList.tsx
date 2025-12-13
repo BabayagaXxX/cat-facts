@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Adoption } from "@/types";
 import { getAdoptions } from "@/lib/api";
 import AdoptionCard from "./AdoptionCard";
+import { AdoptionDetailsDialog } from "./AdoptionDetailsDialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 /**
  * Component that displays a filterable list of cat adoptions
  * Users can filter by status and search by keywords
+ * Click on a card to view details and adopt
  */
 export default function AdoptionList() {
   const [adoptions, setAdoptions] = useState<Adoption[]>([]);
@@ -18,6 +20,8 @@ export default function AdoptionList() {
   const [status, setStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [selectedAdoption, setSelectedAdoption] = useState<Adoption | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   // Load adoptions when component mounts
   useEffect(() => {
@@ -58,6 +62,26 @@ export default function AdoptionList() {
     setFiltered(filtered);
   }, [status, searchQuery, adoptions]);
 
+  /**
+   * Opens the details dialog when a card is clicked
+   */
+  const handleCardClick = (adoption: Adoption) => {
+    setSelectedAdoption(adoption);
+    setDialogOpen(true);
+  };
+
+  /**
+   * Refreshes the adoption list after an adoption status is updated
+   */
+  const handleAdoptionUpdated = async () => {
+    try {
+      const data = await getAdoptions();
+      setAdoptions(data);
+    } catch (error) {
+      console.error('Failed to reload adoptions:', error);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Filter Controls */}
@@ -72,7 +96,6 @@ export default function AdoptionList() {
           >
             <option value="all">All</option>
             <option value="available">Available</option>
-            <option value="pending">Pending</option>
             <option value="adopted">Adopted</option>
           </select>
         </div>
@@ -98,10 +121,22 @@ export default function AdoptionList() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((a) => (
-            <AdoptionCard key={a.id || `${a.name}-${a.contact_email}`} adoption={a} />
+            <AdoptionCard 
+              key={a.id || `${a.name}-${a.contact_email}`} 
+              adoption={a}
+              onClick={handleCardClick}
+            />
           ))}
         </div>
       )}
+
+      {/* Adoption Details Dialog */}
+      <AdoptionDetailsDialog
+        adoption={selectedAdoption}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onAdoptionUpdated={handleAdoptionUpdated}
+      />
     </div>
   );
 }

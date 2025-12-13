@@ -22,7 +22,7 @@ export interface Adoption {
   gender: 'Male' | 'Female' | 'Unknown';
   temperament?: string;
   description?: string;
-  adoption_status: 'available' | 'pending' | 'adopted';
+  adoption_status: 'available' | 'adopted';
   contact_name: string;
   contact_email: string;
   contact_phone?: string;
@@ -30,6 +30,7 @@ export interface Adoption {
   image_url?: string;
   created_at?: string;
   updated_at?: string;
+  deleted_at?: string | null;
 }
 
 export interface BreedResponse {

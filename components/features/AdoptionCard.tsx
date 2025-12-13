@@ -11,7 +11,6 @@ type Props = {
 
 const statusColors: Record<string, string> = {
   available: "bg-green-100 text-green-700",
-  pending: "bg-yellow-100 text-yellow-700",
   adopted: "bg-blue-100 text-blue-700",
 };
 

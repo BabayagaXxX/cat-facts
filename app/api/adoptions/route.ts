@@ -6,6 +6,7 @@ import { saveUploadedFile } from '@/lib/file-upload';
 /**
  * GET /api/adoptions
  * Fetches all adoption listings with breed information, sorted by newest first
+ * Excludes soft-deleted records (where deleted_at is NOT NULL)
  */
 export async function GET() {
     try {
@@ -15,6 +16,7 @@ export async function GET() {
                 b.breed as breed_name
             FROM adoptions a
             LEFT JOIN breeds b ON a.breed_id = b.id
+            WHERE a.deleted_at IS NULL
             ORDER BY a.created_at DESC
         `);
         return NextResponse.json(rows);
