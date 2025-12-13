@@ -38,7 +38,7 @@ export default function Home() {
           </h1>
 
           <p className="mx-auto mb-10 max-w-2xl text-xl text-muted-foreground md:text-2xl">
-            Explore breeds, create unique hybrids, and discover fascinating facts in a beautifully crafted universe.
+            Browse cat breeds, manage adoptions, and explore interesting facts in an intuitive and modern platform.
           </p>
 
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
