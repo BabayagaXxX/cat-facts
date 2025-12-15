@@ -44,11 +44,6 @@ export default function Home() {
         {/* Floating Elements Background */}
         <div className="absolute inset-0 -z-20 overflow-hidden pointer-events-none">
           <motion.div
-            animate={{ y: [0, -20, 0], rotate: [0, 5, 0] }}
-            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute left-[10%] top-[20%] text-6xl opacity-20"
-          >🐱</motion.div>
-          <motion.div
             animate={{ y: [0, 30, 0], rotate: [0, -10, 0] }}
             transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
             className="absolute right-[15%] top-[15%] text-7xl opacity-20"
@@ -60,58 +55,6 @@ export default function Home() {
           >🐾</motion.div>
         </div>
       </section>
-
-
-      {/* Features Grid */}
-      <section className="py-24">
-        <div className="container mx-auto px-4">
-          <div className="mb-16 text-center">
-            <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Why CatFacts?</h2>
-            <p className="text-lg text-muted-foreground">Everything you need to satisfy your feline curiosity.</p>
-          </div>
-
-          <div className="grid gap-8 md:grid-cols-3">
-            {[
-              {
-                title: "Extensive Breed Library",
-                desc: "Detailed information on over 90 cat breeds from around the world.",
-                image: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=800&auto=format&fit=crop",
-                link: "/breeds"
-              },
-              {
-                title: "Hybrid Generator",
-                desc: "Use our advanced algorithm to predict traits of cross-breeding.",
-                image: "https://images.unsplash.com/photo-1573865526739-10659fec78a5?q=80&w=800&auto=format&fit=crop",
-                link: "/hybrid"
-              },
-              {
-                title: "Interactive Playground",
-                desc: "Remix and share cat facts in fun and creative ways.",
-                image: "https://images.unsplash.com/photo-1513245543132-31f507417b26?q=80&w=800&auto=format&fit=crop",
-                link: "/playground"
-              }
-            ].map((feature, i) => (
-              <Link key={i} href={feature.link} className="group block h-full">
-                <Card className="h-full overflow-hidden border-border bg-card text-card-foreground shadow-lg transition-all hover:-translate-y-2 hover:shadow-xl hover:ring-2 hover:ring-primary/20">
-                  <div className="relative h-64 overflow-hidden">
-                    <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10 dark:group-hover:bg-white/5" />
-                    <img
-                      src={feature.image}
-                      alt={feature.title}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
-                  </div>
-                  <CardContent className="p-8">
-                    <h3 className="mb-3 text-xl font-bold text-card-foreground">{feature.title}</h3>
-                    <p className="text-muted-foreground">{feature.desc}</p>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
     </div>
   );
 }
